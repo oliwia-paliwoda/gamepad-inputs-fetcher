@@ -32,6 +32,7 @@
 
 .App-body{
     display: flex;
+    flex-direction: column;
 }
 
 .App-link {
