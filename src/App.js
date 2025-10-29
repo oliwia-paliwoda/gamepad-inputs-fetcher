@@ -4,8 +4,6 @@ import React from "react";
 
 function App() {
 
-    const buttonIndices = { 0: "A", 1: "B", 2: "X", 3: "Y", 4: "LB", 5: "RB", 6: "LT", 7: "RT", 8: "View", 9: "Menu", 10: "LS", 11: "RS", 12: "DUp", 13: "DDown", 14: "DLeft", 15: "DRight", 16: "Xbox" };
-
     const [gamepadState, setGamepadState] = React.useState("No gamepad found");
     function handleGamepadConnected(value) {
         setGamepadState(value);
@@ -86,31 +84,52 @@ function App() {
 
     });
 
-    function trackInputs(){
+    function trackInputs() {
         let previousButtons = [];
+        const buttonNames = [
+            "3", "4", "1", "2",
+            "L1", "R1", "L2", "R2",
+            "Select", "Start",
+            "L3", "R3",
+            "u", "d", "b", "f"
+        ];
 
-        function update(){
+        function update() {
             const gamepads = navigator.getGamepads();
-            const gamepad = gamepads[0];
-            if (!gamepad) return;
+            const gp = gamepads[0];
+            if (!gp) {
+                requestAnimationFrame(update);
+                return;
+            }
 
-            gamepad.buttons.forEach((button, i) => {
-                const lastPressed = previousButtons[i] || false;
-                const nowPressed = button.pressed;
+            const newlyPressed = [];
 
-                if (!lastPressed && nowPressed) {
-                    setLatestInput(buttonIndices[i]);
+            gp.buttons.forEach((button, i) => {
+                const wasPressed = previousButtons[i] || false;
+                const isPressed = button.pressed;
+
+                if (!wasPressed && isPressed) {
+                    newlyPressed.push(buttonNames[i] || `Button ${i}`);
                 }
 
-                previousButtons[i] = nowPressed;
+                previousButtons[i] = isPressed;
             });
 
-            requestAnimationFrame(update);
+            if (newlyPressed.length > 1) {
+                setLatestInput(newlyPressed.join(" + "));
 
+            }
+
+
+            else if (newlyPressed.length === 1) {
+                setLatestInput(newlyPressed[0]);
+
+            }
+
+            requestAnimationFrame(update);
         }
 
         requestAnimationFrame(update);
-
     }
 
   return (
