@@ -4,6 +4,27 @@ import React from "react";
 
 function App() {
 
+    const defaultButtonNames = [
+        "3", "4", "1", "2",
+        "L1", "R1", "L2", "R2",
+        "Select", "Start",
+        "L3", "R3",
+        "u", "d", "b", "f"
+    ];
+
+    let buttonNames = [
+        "3", "4", "1", "2",
+        "L1", "R1", "L2", "R2",
+        "Select", "Start",
+        "L3", "R3",
+        "u", "d", "b", "f"
+    ];
+
+    const [showLayoutTable, setShowLayoutTable] = React.useState(false);
+    function handleShowLayoutTable(value) {
+        setShowLayoutTable(value);
+    }
+
     const [gamepadState, setGamepadState] = React.useState("No gamepad found");
     function handleGamepadConnected(value) {
         setGamepadState(value);
@@ -84,15 +105,50 @@ function App() {
 
     });
 
+    function SetCustomLayout(){
+        const [activeIndex, setActiveIndex] = React.useState(0);
+
+        React.useEffect(() => {
+            const handleKeyDown = (e) => {
+                if (e.key === "Enter") {
+                    setActiveIndex((prev) =>
+                        prev < defaultButtonNames.length - 1 ? prev + 1 : prev
+                    );
+                }
+            };
+            window.addEventListener("keydown", handleKeyDown);
+            return () => window.removeEventListener("keydown", handleKeyDown);
+        }, []);
+
+        if (showLayoutTable===true){
+           return ( <table>
+               <thead>
+               <tr>
+                   <th>Input name</th>
+                   <th>Current button</th>
+               </tr>
+               </thead>
+               <tbody>
+               {defaultButtonNames.map((item, index) => (
+
+                   <tr key={index} style={{
+                       backgroundColor:
+                           index === activeIndex ? "rgba(100, 149, 237, 0.3)" : "transparent",
+                   }}
+                   >
+                       <td>{item}</td>
+                       <td>{buttonNames[index]}</td>
+                   </tr>
+
+               ))}
+               </tbody>
+           </table>
+           );
+       }
+    }
+
     function trackInputs() {
         let previousButtons = [];
-        const buttonNames = [
-            "3", "4", "1", "2",
-            "L1", "R1", "L2", "R2",
-            "Select", "Start",
-            "L3", "R3",
-            "u", "d", "b", "f"
-        ];
 
         function update() {
             const gamepads = navigator.getGamepads();
@@ -140,6 +196,9 @@ function App() {
         <div className="App-body">
             {gamepadState}
             <div className="test">{"Pressed button: "+latestInput}</div>
+            <button className="set-layout-button"  onClick={() => setShowLayoutTable(true)}
+            >Set custom layout</button>
+            <SetCustomLayout />
         </div>
     </div>
   );
