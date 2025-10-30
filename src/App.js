@@ -2,6 +2,99 @@ import logo from './logo.svg';
 import './App.css';
 import React from "react";
 
+function SetCustomLayout({ showLayoutTable, defaultButtonNames, buttonNames, setButtonNames, checksum, handledButtons }) {
+    const activeIndexRef = React.useRef(0);
+    const [activeIndex, setActiveIndex] = React.useState(0);
+    const previousButtonCheck = React.useRef(undefined);
+
+    React.useEffect(() => {
+        if (!showLayoutTable) return;
+
+        let previousButtons = [];
+
+        const updateGamepad = () => {
+            const gamepads = navigator.getGamepads();
+            const gp = gamepads[0];
+            if (!gp) {
+                requestAnimationFrame(updateGamepad);
+                return;
+            }
+
+            gp.buttons.forEach((button, i) => {
+                const wasPressed = previousButtons[i] || false;
+                const isPressed = button.pressed;
+
+                if (!wasPressed && isPressed) {
+                    const currentButton = i;
+
+                    if (!handledButtons.current.has(currentButton)) {
+
+                        const currentIndex = activeIndexRef.current;
+
+                        setButtonNames(prev => {
+                            const newNames = [...prev];
+                            newNames[currentIndex] = defaultButtonNames[currentButton];
+                            return newNames;
+                        });
+
+                        checksum.current += 1;
+
+                        setActiveIndex(prev => {
+                            const next = Math.min(prev + 1, defaultButtonNames.length - 1);
+                            activeIndexRef.current = next;
+                            return next;
+                        });
+
+                        handledButtons.current.add(currentButton);
+                    }
+
+                    previousButtonCheck.current = currentButton;
+                }
+
+                if (!isPressed && handledButtons.current.has(i)) {
+                    handledButtons.current.delete(i);
+                }
+
+                previousButtons[i] = isPressed;
+            });
+
+            requestAnimationFrame(updateGamepad);
+        };
+
+        requestAnimationFrame(updateGamepad);
+    }, [showLayoutTable]);
+
+    if (!showLayoutTable) return null;
+
+    return (
+        <div className="custom-layout">
+        <table>
+            <thead>
+            <tr>
+                <th>Input name</th>
+                <th>Current button</th>
+            </tr>
+            </thead>
+            <tbody>
+            {defaultButtonNames.map((item, index) => (
+                <tr key={index} style={{
+                    backgroundColor: index === activeIndex ? "rgba(100, 149, 237, 0.3)" : "transparent",
+                }}>
+                    <td>{item}</td>
+                    <td>{buttonNames[index]}</td>
+                </tr>
+            ))}
+            </tbody>
+        </table>
+            <div className="buttons-container">
+                <button className="set-layout-button">Reset</button>
+                <button className="set-layout-button">Save</button>
+            </div>
+        </div>
+    );
+}
+
+
 function App() {
 
     const defaultButtonNames = [
@@ -12,13 +105,21 @@ function App() {
         "u", "d", "b", "f"
     ];
 
-    let buttonNames = [
+    const [buttonNames, setButtonNames] = React.useState([
         "3", "4", "1", "2",
         "L1", "R1", "L2", "R2",
         "Select", "Start",
         "L3", "R3",
         "u", "d", "b", "f"
-    ];
+    ]);
+
+    /*function assignButtonToActiveIndex(buttonIndex) {
+        setButtonNames(prev => {
+            const newButtons = [...prev];
+            newButtons[activeIndex] = buttonIndex.toString(); // zapisujemy numer przycisku
+            return newButtons;
+        });
+    }*/
 
     const [showLayoutTable, setShowLayoutTable] = React.useState(false);
     function handleShowLayoutTable(value) {
@@ -34,6 +135,10 @@ function App() {
     function handleLatestInput(value) {
         setLatestInput(value);
     }
+
+    const checksum = React.useRef(0);
+    const previousButtonCheck = React.useRef(undefined);
+    const handledButtons = React.useRef(new Set());
 
     const mapGamepadToGamepadState = (gamepad, deadzone) => {
         const { axes, buttons } = gamepad;
@@ -105,47 +210,8 @@ function App() {
 
     });
 
-    function SetCustomLayout(){
-        const [activeIndex, setActiveIndex] = React.useState(0);
 
-        React.useEffect(() => {
-            const handleKeyDown = (e) => {
-                if (e.key === "Enter") {
-                    setActiveIndex((prev) =>
-                        prev < defaultButtonNames.length - 1 ? prev + 1 : prev
-                    );
-                }
-            };
-            window.addEventListener("keydown", handleKeyDown);
-            return () => window.removeEventListener("keydown", handleKeyDown);
-        }, []);
 
-        if (showLayoutTable===true){
-           return ( <table>
-               <thead>
-               <tr>
-                   <th>Input name</th>
-                   <th>Current button</th>
-               </tr>
-               </thead>
-               <tbody>
-               {defaultButtonNames.map((item, index) => (
-
-                   <tr key={index} style={{
-                       backgroundColor:
-                           index === activeIndex ? "rgba(100, 149, 237, 0.3)" : "transparent",
-                   }}
-                   >
-                       <td>{item}</td>
-                       <td>{buttonNames[index]}</td>
-                   </tr>
-
-               ))}
-               </tbody>
-           </table>
-           );
-       }
-    }
 
     function trackInputs() {
         let previousButtons = [];
@@ -198,7 +264,16 @@ function App() {
             <div className="test">{"Pressed button: "+latestInput}</div>
             <button className="set-layout-button"  onClick={() => setShowLayoutTable(true)}
             >Set custom layout</button>
-            <SetCustomLayout />
+            <SetCustomLayout
+                showLayoutTable={showLayoutTable}
+                defaultButtonNames={defaultButtonNames}
+                buttonNames={buttonNames}
+                setButtonNames={setButtonNames}
+                checksum={checksum}
+                handledButtons={handledButtons}
+            />
+
+
         </div>
     </div>
   );
